@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minimal ASCII Video Converter</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background-color: #1976d2;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.25rem;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 300px;
+      background-color: #fff;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #e0e0e0;
+    }
+    .sidebar h2 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      color: #1976d2;
+    }
+    .sidebar input,
+    .sidebar button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    .sidebar input:focus,
+    .sidebar button:focus {
+      border-color: #1976d2;
+    }
+    .sidebar button {
+      background-color: #1976d2;
+      color: #fff;
+      cursor: pointer;
+      border: none;
+    }
+    .sidebar button:hover {
+      background-color: #1565c0;
+    }
+    .file-drop {
+      border: 2px dashed #1976d2;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      cursor: pointer;
+      color: #1976d2;
+    }
+    .file-drop:hover { background-color: #e3f2fd; }
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      background-color: #fff;
+      overflow-y: auto;
+    }
+    .main-content h2 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      color: #1976d2;
+    }
+    #asciiArt {
+      background-color: #000;
+      color: #00e676;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 8px;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      height: calc(100% - 40px);
+    }
+    video {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 0.9rem;
+    }
+    .dark-mode {
+      background-color: #2c2c2c;
+      color: #e0e0e0;
+    }
+    .dark-mode .sidebar {
+      background-color: #3a3a3a;
+      border-right: 1px solid #555;
+    }
+    .dark-mode .main-content {
+      background-color: #3a3a3a;
+    }
+    .dark-mode #asciiArt {
+      background-color: #000;
+      color: #00e676;
+    }
+  </style>
+</head>
+<body>
+  <header>ASCII Video Converter</header>
+  <div class="container">
+    <div class="sidebar">
+      <div class="file-drop" id="fileDrop">
+        Drag & Drop Video Here or Click to Select
+        <input type="file" id="videoInput" accept="video/*" style="display: none;">
+      </div>
+      <video id="video" controls style="display: none;"></video>
+      
+      <h2>Conversion Settings</h2>
+      <input type="number" id="width" placeholder="Width (chars per row)" value="120" min="10" max="300">
+      <input type="number" id="height" placeholder="Height (chars per column)" value="60" min="10" max="150">
+      <input type="range" id="brightness" min="-100" max="100" value="0">
+      <input type="range" id="contrast" min="-100" max="100" value="0">
+      <input type="text" id="asciiChars" placeholder="Custom ASCII Characters" value="@#8&%$*+=-:,. ">
+      <input type="color" id="textColor" value="#00e676">
+      <input type="number" id="fontSize" placeholder="ASCII Font Size (px)" value="8" min="6" max="24">
+      <input type="number" id="captureInterval" placeholder="Frame Capture Interval (ms)" value="500" min="100" max="5000" step="100">
+      <div class="toggle-container">
+        <label for="dithering">Enable Dithering</label>
+        <input type="checkbox" id="dithering">
+      </div>
+      <div style="margin-top: 20px;">
+        <button id="startButton">Start</button>
+        <button id="stopButton" style="margin-top: 10px;">Stop</button>
+      </div>
+      <div style="margin-top: 20px;">
+        <button id="downloadMP4Button">Download MP4</button>
+        <button id="downloadTextButton" style="margin-top: 10px;">Download Text</button>
+      </div>
+      <div class="toggle-container">
+        <label for="themeToggle">Dark Mode</label>
+        <input type="checkbox" id="themeToggle">
+      </div>
+    </div>
+    <div class="main-content">
+      <h2>ASCII Art Output</h2>
+      <pre id="asciiArt"></pre>
+    </div>
+  </div>
+  
+  <!-- Hidden canvas for MP4 recording -->
+  <canvas id="recordCanvas" style="display: none;"></canvas>
+  
+  <script>
+    // Grab elements
+    const videoInput = document.getElementById('videoInput');
+    const fileDrop = document.getElementById('fileDrop');
+    const video = document.getElementById('video');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+    const downloadMP4Button = document.getElementById('downloadMP4Button');
+    const downloadTextButton = document.getElementById('downloadTextButton');
+    const asciiArt = document.getElementById('asciiArt');
+    const widthInput = document.getElementById('width');
+    const heightInput = document.getElementById('height');
+    const brightnessInput = document.getElementById('brightness');
+    const contrastInput = document.getElementById('contrast');
+    const asciiCharsInput = document.getElementById('asciiChars');
+    const captureIntervalInput = document.getElementById('captureInterval');
+    const ditheringCheckbox = document.getElementById('dithering');
+    const textColorInput = document.getElementById('textColor');
+    const fontSizeInput = document.getElementById('fontSize');
+    const themeToggle = document.getElementById('themeToggle');
+    
+    const recordCanvas = document.getElementById('recordCanvas');
+    const recordCtx = recordCanvas.getContext('2d');
+    
+    let animationFrameId, mediaRecorder;
+    let recordedChunks = [];
+    let asciiFrames = [];
+    let lastCaptureTime = 0;
+    let videoDataURL = "";
+    
+    // Offscreen canvas for conversion
+    const convCanvas = document.createElement('canvas');
+    const convCtx = convCanvas.getContext('2d');
+    
+    function updateAsciiStyle() {
+      asciiArt.style.color = textColorInput.value;
+      asciiArt.style.fontSize = fontSizeInput.value + "px";
+    }
+    updateAsciiStyle();
+    
+    function adjustGray(gray, brightness, contrast) {
+      let factor = (259 * (parseInt(contrast) + 255)) / (255 * (259 - parseInt(contrast)));
+      let newGray = factor * (gray - 128) + 128 + parseInt(brightness);
+      return Math.max(0, Math.min(255, Math.floor(newGray)));
+    }
+    
+    function convertFrameToASCII() {
+      const asciiWidth = parseInt(widthInput.value, 10);
+      const asciiHeight = parseInt(heightInput.value, 10);
+      convCanvas.width = asciiWidth;
+      convCanvas.height = asciiHeight;
+      
+      const asciiCharacters = asciiCharsInput.value.split('');
+      const characterScale = asciiCharacters.length - 1;
+      
+      convCtx.drawImage(video, 0, 0, asciiWidth, asciiHeight);
+      const imageData = convCtx.getImageData(0, 0, asciiWidth, asciiHeight);
+      const pixels = imageData.data;
+      let asciiString = "";
+      
+      const brightness = brightnessInput.value;
+      const contrast = contrastInput.value;
+      const useDithering = ditheringCheckbox.checked;
+      
+      if (useDithering) {
+        let grayArray = new Array(asciiWidth * asciiHeight);
+        for (let i = 0; i < asciiWidth * asciiHeight; i++) {
+          let r = pixels[i * 4], g = pixels[i * 4 + 1], b = pixels[i * 4 + 2];
+          let gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          grayArray[i] = adjustGray(gray, brightness, contrast);
+        }
+        for (let y = 0; y < asciiHeight; y++) {
+          for (let x = 0; x < asciiWidth; x++) {
+            let idx = y * asciiWidth + x;
+            let oldPixel = grayArray[idx];
+            let newPixel = Math.round((oldPixel / 255) * characterScale) * (255 / characterScale);
+            let error = oldPixel - newPixel;
+            grayArray[idx] = newPixel;
+            if (x + 1 < asciiWidth) grayArray[y * asciiWidth + (x + 1)] += error * 7/16;
+            if (x - 1 >= 0 && y + 1 < asciiHeight) grayArray[(y + 1) * asciiWidth + (x - 1)] += error * 3/16;
+            if (y + 1 < asciiHeight) grayArray[(y + 1) * asciiWidth + x] += error * 5/16;
+            if (x + 1 < asciiWidth && y + 1 < asciiHeight) grayArray[(y + 1) * asciiWidth + (x + 1)] += error * 1/16;
+          }
+        }
+        for (let y = 0; y < asciiHeight; y++) {
+          for (let x = 0; x < asciiWidth; x++) {
+            let idx = y * asciiWidth + x;
+            let gray = Math.max(0, Math.min(255, grayArray[idx]));
+            let index = Math.floor((gray / 255) * characterScale);
+            asciiString += asciiCharacters[index];
+          }
+          asciiString += "\n";
+        }
+      } else {
+        for (let i = 0; i < pixels.length; i += 4) {
+          let r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+          let gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          gray = adjustGray(gray, brightness, contrast);
+          let index = Math.floor((gray / 255) * characterScale);
+          asciiString += asciiCharacters[index];
+          if (((i / 4) + 1) % asciiWidth === 0) asciiString += "\n";
+        }
+      }
+      asciiArt.textContent = asciiString;
+      updateAsciiStyle();
+      return asciiString;
+    }
+    
+    function updateRecordCanvas(asciiString) {
+      const asciiWidth = parseInt(widthInput.value, 10);
+      const asciiHeight = parseInt(heightInput.value, 10);
+      const charWidth = 8, charHeight = parseInt(fontSizeInput.value, 10) + 2;
+      recordCanvas.width = asciiWidth * charWidth;
+      recordCanvas.height = asciiHeight * charHeight;
+      
+      recordCtx.fillStyle = "#000";
+      recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
+      recordCtx.font = `${charHeight - 2}px monospace`;
+      recordCtx.fillStyle = textColorInput.value;
+      
+      const lines = asciiString.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        recordCtx.fillText(lines[i], 0, (i + 1) * charHeight);
+      }
+    }
+    
+    function updateASCII() {
+      if (!video.paused && !video.ended) {
+        const currentAscii = convertFrameToASCII();
+        updateRecordCanvas(currentAscii);
+        const currentTimeMs = video.currentTime * 1000;
+        const captureInterval = parseInt(captureIntervalInput.value, 10);
+        if (currentTimeMs - lastCaptureTime >= captureInterval) {
+          asciiFrames.push({ time: video.currentTime.toFixed(2), frame: currentAscii });
+          lastCaptureTime = currentTimeMs;
+        }
+        animationFrameId = requestAnimationFrame(updateASCII);
+      }
+    }
+    
+    function startRecording() {
+      const canvasStream = recordCanvas.captureStream(25);
+      const videoStream = video.captureStream();
+      let audioTracks = videoStream.getAudioTracks();
+      const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(combinedStream, { mimeType: "video/webm" });
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+      mediaRecorder.start();
+    }
+    
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+    }
+    
+    videoInput.addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (file) {
+        const fileURL = URL.createObjectURL(file);
+        video.src = fileURL;
+        video.style.display = "block";
+        video.load();
+        asciiFrames = [];
+        lastCaptureTime = 0;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          videoDataURL = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    fileDrop.addEventListener('click', function () { videoInput.click(); });
+    fileDrop.addEventListener('dragover', function(e) { e.preventDefault(); fileDrop.style.backgroundColor = "#e3f2fd"; });
+    fileDrop.addEventListener('dragleave', function(e) { e.preventDefault(); fileDrop.style.backgroundColor = ""; });
+    fileDrop.addEventListener('drop', function(e) {
+      e.preventDefault();
+      fileDrop.style.backgroundColor = "";
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        videoInput.files = e.dataTransfer.files;
+        const fileURL = URL.createObjectURL(file);
+        video.src = fileURL;
+        video.style.display = "block";
+        video.load();
+        asciiFrames = [];
+        lastCaptureTime = 0;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          videoDataURL = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    startButton.addEventListener('click', function () {
+      if (video.src) {
+        video.play();
+        startRecording();
+        updateASCII();
+      } else {
+        alert("Please select a video file first.");
+      }
+    });
+    
+    stopButton.addEventListener('click', function () {
+      video.pause();
+      cancelAnimationFrame(animationFrameId);
+      stopRecording();
+    });
+    
+    downloadMP4Button.addEventListener('click', function () {
+      if (recordedChunks.length === 0) {
+        alert("No video recorded. Please run the conversion first.");
+        return;
+      }
+      const blob = new Blob(recordedChunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ascii_video.webm";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    
+    downloadTextButton.addEventListener('click', function () {
+      if (asciiFrames.length === 0) {
+        alert("No ASCII frames captured. Please run the conversion first.");
+        return;
+      }
+      let fileContent = "ASCII Video Conversion\n\n";
+      asciiFrames.forEach((frame, index) => {
+        fileContent += `=== Frame ${index + 1} (Time: ${frame.time} s) ===\n`;
+        fileContent += frame.frame + "\n\n";
+      });
+      const blob = new Blob([fileContent], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ascii_video.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    
+    themeToggle.addEventListener('change', function () {
+      if (this.checked) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    });
+    
+    video.addEventListener('pause', () => cancelAnimationFrame(animationFrameId));
+    video.addEventListener('ended', () => cancelAnimationFrame(animationFrameId));
+  </script>
+</body>
+</html>
