@@ -3,166 +3,507 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Minimal ASCII Video Converter</title>
-  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet">
+  <title>ASCII Video Studio</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #3f51b5;
+      --primary-dark: #303f9f;
+      --primary-light: #c5cae9;
+      --accent: #ff4081;
+      --text: #333;
+      --text-light: #fff;
+      --background: #f5f5f5;
+      --card: #fff;
+      --border: #e0e0e0;
+      --shadow: 0 2px 10px rgba(0,0,0,0.1);
+      --transition: all 0.3s ease;
+    }
+    
+    .dark-theme {
+      --primary: #7986cb;
+      --primary-dark: #5c6bc0;
+      --primary-light: #9fa8da;
+      --accent: #ff80ab;
+      --text: #e0e0e0;
+      --text-light: #fff;
+      --background: #121212;
+      --card: #1e1e1e;
+      --border: #333;
+      --shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    
     body {
       font-family: 'Roboto', sans-serif;
-      background-color: #f7f9fc;
-      color: #333;
+      background-color: var(--background);
+      color: var(--text);
       display: flex;
       flex-direction: column;
       height: 100vh;
+      transition: var(--transition);
     }
+    
     header {
-      background-color: #1976d2;
-      color: #fff;
-      padding: 15px;
-      text-align: center;
-      font-size: 1.25rem;
+      background-color: var(--primary);
+      color: var(--text-light);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+      z-index: 10;
     }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      font-size: 1.5rem;
+    }
+    
+    .logo span {
+      color: var(--accent);
+      margin-left: 4px;
+    }
+    
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+      margin-left: 10px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
     .container {
       display: flex;
       flex: 1;
       overflow: hidden;
     }
+    
     .sidebar {
-      width: 300px;
-      background-color: #fff;
-      padding: 20px;
+      width: 320px;
+      background-color: var(--card);
       overflow-y: auto;
-      border-right: 1px solid #e0e0e0;
+      border-right: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
     }
-    .sidebar h2 {
-      font-size: 1.1rem;
-      margin-bottom: 10px;
-      color: #1976d2;
-    }
-    .sidebar input,
-    .sidebar button {
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.3s ease;
-    }
-    .sidebar input:focus,
-    .sidebar button:focus {
-      border-color: #1976d2;
-    }
-    .sidebar button {
-      background-color: #1976d2;
-      color: #fff;
-      cursor: pointer;
-      border: none;
-    }
-    .sidebar button:hover {
-      background-color: #1565c0;
-    }
+    
     .file-drop {
-      border: 2px dashed #1976d2;
+      border: 2px dashed var(--primary);
       border-radius: 8px;
-      padding: 20px;
+      padding: 24px 16px;
       text-align: center;
-      margin-bottom: 20px;
+      margin: 16px;
       cursor: pointer;
-      color: #1976d2;
+      color: var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: var(--transition);
     }
-    .file-drop:hover { background-color: #e3f2fd; }
+    
+    .file-drop:hover {
+      background-color: var(--primary-light);
+      color: var(--text);
+    }
+    
+    .file-drop-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .settings-panel {
+      padding: 16px;
+      flex: 1;
+    }
+    
+    .panel-section {
+      margin-bottom: 24px;
+    }
+    
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+    }
+    
+    .panel-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 16px;
+      background-color: var(--primary);
+      margin-right: 8px;
+      border-radius: 2px;
+    }
+    
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .control-row label {
+      flex: 1;
+      font-size: 0.9rem;
+    }
+    
+    .control-input {
+      flex: 1;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      background-color: var(--card);
+      color: var(--text);
+      outline: none;
+      transition: var(--transition);
+    }
+    
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+    
+    .range-slider {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #ddd;
+      outline: none;
+    }
+    
+    .range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+    }
+    
+    .button-row {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary);
+      color: var(--text-light);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .btn-outline {
+      background-color: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+    
+    .btn-outline:hover {
+      background-color: var(--primary-light);
+    }
+    
     .main-content {
       flex: 1;
-      padding: 20px;
-      background-color: #fff;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--card);
+      transition: var(--transition);
+      overflow: hidden;
     }
-    .main-content h2 {
-      font-size: 1.1rem;
-      margin-bottom: 10px;
-      color: #1976d2;
+    
+    .toolbar {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
+    
+    .display-section {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .tabs {
+      display: flex;
+      background-color: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .tab {
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--text);
+      transition: var(--transition);
+      border-bottom: 2px solid transparent;
+    }
+    
+    .tab.active {
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary);
+    }
+    
+    .tab:hover:not(.active) {
+      background-color: rgba(0,0,0,0.05);
+    }
+    
+    .content-view {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    #videoContainer, #asciiContainer {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      display: none;
+    }
+    
+    #videoContainer.active, #asciiContainer.active {
+      display: block;
+    }
+    
     #asciiArt {
       background-color: #000;
       color: #00e676;
-      padding: 15px;
-      border-radius: 8px;
+      padding: 20px;
       font-family: monospace;
-      font-size: 8px;
-      white-space: pre-wrap;
-      overflow-y: auto;
-      height: calc(100% - 40px);
+      white-space: pre;
+      min-width: 100%;
+      min-height: 100%;
+      box-sizing: border-box;
+      overflow: auto;
     }
+    
     video {
-      width: 100%;
-      border-radius: 8px;
-      margin-top: 10px;
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      margin: 0 auto;
     }
-    .toggle-container {
+    
+    .status-bar {
+      padding: 8px 16px;
+      background-color: var(--primary-dark);
+      color: var(--text-light);
+      font-size: 0.8rem;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-top: 20px;
-      font-size: 0.9rem;
-    }
-    .dark-mode {
-      background-color: #2c2c2c;
-      color: #e0e0e0;
-    }
-    .dark-mode .sidebar {
-      background-color: #3a3a3a;
-      border-right: 1px solid #555;
-    }
-    .dark-mode .main-content {
-      background-color: #3a3a3a;
-    }
-    .dark-mode #asciiArt {
-      background-color: #000;
-      color: #00e676;
     }
   </style>
 </head>
 <body>
-  <header>ASCII Video Converter</header>
+  <header>
+    <div class="logo">ASCII Video <span>Studio</span></div>
+    <div class="theme-toggle">
+      <span>Dark Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </header>
+  
   <div class="container">
     <div class="sidebar">
       <div class="file-drop" id="fileDrop">
-        Drag & Drop Video Here or Click to Select
+        <div class="file-drop-icon">📁</div>
+        <div>Drag & Drop Video Here</div>
+        <div>or Click to Select</div>
         <input type="file" id="videoInput" accept="video/*" style="display: none;">
       </div>
-      <video id="video" controls style="display: none;"></video>
       
-      <h2>Conversion Settings</h2>
-      <input type="number" id="width" placeholder="Width (chars per row)" value="120" min="10" max="300">
-      <input type="number" id="height" placeholder="Height (chars per column)" value="60" min="10" max="150">
-      <input type="range" id="brightness" min="-100" max="100" value="0">
-      <input type="range" id="contrast" min="-100" max="100" value="0">
-      <input type="text" id="asciiChars" placeholder="Custom ASCII Characters" value="@#8&%$*+=-:,. ">
-      <input type="color" id="textColor" value="#00e676">
-      <input type="number" id="fontSize" placeholder="ASCII Font Size (px)" value="8" min="6" max="24">
-      <input type="number" id="captureInterval" placeholder="Frame Capture Interval (ms)" value="500" min="100" max="5000" step="100">
-      <div class="toggle-container">
-        <label for="dithering">Enable Dithering</label>
-        <input type="checkbox" id="dithering">
-      </div>
-      <div style="margin-top: 20px;">
-        <button id="startButton">Start</button>
-        <button id="stopButton" style="margin-top: 10px;">Stop</button>
-      </div>
-      <div style="margin-top: 20px;">
-        <button id="downloadMP4Button">Download MP4</button>
-        <button id="downloadTextButton" style="margin-top: 10px;">Download Text</button>
-      </div>
-      <div class="toggle-container">
-        <label for="themeToggle">Dark Mode</label>
-        <input type="checkbox" id="themeToggle">
+      <div class="settings-panel">
+        <div class="panel-section">
+          <div class="panel-title">Dimensions</div>
+          <div class="control-row">
+            <label for="width">Width:</label>
+            <div class="control-input">
+              <input type="number" id="width" class="form-input" placeholder="Width" value="120" min="10" max="300">
+            </div>
+          </div>
+          <div class="control-row">
+            <label for="height">Height:</label>
+            <div class="control-input">
+              <input type="number" id="height" class="form-input" placeholder="Height" value="60" min="10" max="150">
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-title">Appearance</div>
+          <div class="control-row">
+            <label for="brightness">Brightness:</label>
+          </div>
+          <div class="control-row">
+            <input type="range" id="brightness" class="range-slider" min="-100" max="100" value="0">
+          </div>
+          <div class="control-row">
+            <label for="contrast">Contrast:</label>
+          </div>
+          <div class="control-row">
+            <input type="range" id="contrast" class="range-slider" min="-100" max="100" value="0">
+          </div>
+          <div class="control-row">
+            <label for="asciiChars">Characters:</label>
+            <div class="control-input">
+              <input type="text" id="asciiChars" class="form-input" placeholder="ASCII Characters" value="@#8&%$*+=-:,. ">
+            </div>
+          </div>
+          <div class="control-row">
+            <label for="textColor">Text Color:</label>
+            <div class="control-input">
+              <input type="color" id="textColor" class="form-input" value="#00e676">
+            </div>
+          </div>
+          <div class="control-row">
+            <label for="fontSize">Font Size:</label>
+            <div class="control-input">
+              <input type="number" id="fontSize" class="form-input" value="8" min="6" max="24">
+            </div>
+          </div>
+          <div class="control-row">
+            <label for="dithering">Enable Dithering:</label>
+            <div class="control-input">
+              <input type="checkbox" id="dithering">
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-title">Processing</div>
+          <div class="control-row">
+            <label for="captureInterval">Frame Interval (ms):</label>
+            <div class="control-input">
+              <input type="number" id="captureInterval" class="form-input" value="500" min="100" max="5000" step="100">
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-title">Actions</div>
+          <div class="button-row">
+            <button id="startButton" class="btn btn-primary">Start</button>
+            <button id="stopButton" class="btn btn-outline">Stop</button>
+          </div>
+          <div class="button-row">
+            <button id="downloadMP4Button" class="btn btn-primary">Download MP4</button>
+            <button id="downloadTextButton" class="btn btn-outline">Download Text</button>
+          </div>
+        </div>
       </div>
     </div>
+    
     <div class="main-content">
-      <h2>ASCII Art Output</h2>
-      <pre id="asciiArt"></pre>
+      <div class="toolbar">
+        <h2>Video to ASCII Converter</h2>
+        <div class="file-info">Ready</div>
+      </div>
+      
+      <div class="display-section">
+        <div class="tabs">
+          <div class="tab active" data-tab="video">Original Video</div>
+          <div class="tab" data-tab="ascii">ASCII Output</div>
+        </div>
+        
+        <div class="content-view">
+          <div id="videoContainer" class="active">
+            <video id="video" controls></video>
+          </div>
+          <div id="asciiContainer">
+            <pre id="asciiArt"></pre>
+          </div>
+        </div>
+      </div>
+      
+      <div class="status-bar">
+        <div id="status">No file selected</div>
+        <div id="progress"></div>
+      </div>
     </div>
   </div>
   
@@ -189,6 +530,12 @@
     const textColorInput = document.getElementById('textColor');
     const fontSizeInput = document.getElementById('fontSize');
     const themeToggle = document.getElementById('themeToggle');
+    const status = document.getElementById('status');
+    const progress = document.getElementById('progress');
+    const fileInfo = document.querySelector('.file-info');
+    const tabs = document.querySelectorAll('.tab');
+    const videoContainer = document.getElementById('videoContainer');
+    const asciiContainer = document.getElementById('asciiContainer');
     
     const recordCanvas = document.getElementById('recordCanvas');
     const recordCtx = recordCanvas.getContext('2d');
@@ -202,6 +549,31 @@
     // Offscreen canvas for conversion
     const convCanvas = document.createElement('canvas');
     const convCtx = convCanvas.getContext('2d');
+    
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        if (tab.dataset.tab === 'video') {
+          videoContainer.classList.add('active');
+          asciiContainer.classList.remove('active');
+        } else {
+          videoContainer.classList.remove('active');
+          asciiContainer.classList.add('active');
+        }
+      });
+    });
+    
+    // Theme toggle
+    themeToggle.addEventListener('change', function () {
+      if (this.checked) {
+        document.body.classList.add('dark-theme');
+      } else {
+        document.body.classList.remove('dark-theme');
+      }
+    });
     
     function updateAsciiStyle() {
       asciiArt.style.color = textColorInput.value;
@@ -305,6 +677,10 @@
           asciiFrames.push({ time: video.currentTime.toFixed(2), frame: currentAscii });
           lastCaptureTime = currentTimeMs;
         }
+        
+        // Update progress info
+        progress.textContent = `Time: ${video.currentTime.toFixed(1)}s | Frames: ${asciiFrames.length}`;
+        
         animationFrameId = requestAnimationFrame(updateASCII);
       }
     }
@@ -320,11 +696,13 @@
         if (e.data.size > 0) recordedChunks.push(e.data);
       };
       mediaRecorder.start();
+      status.textContent = "Recording...";
     }
     
     function stopRecording() {
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
+        status.textContent = "Recording stopped";
       }
     }
     
@@ -337,6 +715,9 @@
         video.load();
         asciiFrames = [];
         lastCaptureTime = 0;
+        fileInfo.textContent = file.name;
+        status.textContent = "Video loaded: " + file.name;
+        
         const reader = new FileReader();
         reader.onload = function(e) {
           videoDataURL = e.target.result;
@@ -346,8 +727,14 @@
     });
     
     fileDrop.addEventListener('click', function () { videoInput.click(); });
-    fileDrop.addEventListener('dragover', function(e) { e.preventDefault(); fileDrop.style.backgroundColor = "#e3f2fd"; });
-    fileDrop.addEventListener('dragleave', function(e) { e.preventDefault(); fileDrop.style.backgroundColor = ""; });
+    fileDrop.addEventListener('dragover', function(e) { 
+      e.preventDefault(); 
+      fileDrop.style.backgroundColor = "var(--primary-light)"; 
+    });
+    fileDrop.addEventListener('dragleave', function(e) { 
+      e.preventDefault(); 
+      fileDrop.style.backgroundColor = ""; 
+    });
     fileDrop.addEventListener('drop', function(e) {
       e.preventDefault();
       fileDrop.style.backgroundColor = "";
@@ -360,6 +747,9 @@
         video.load();
         asciiFrames = [];
         lastCaptureTime = 0;
+        fileInfo.textContent = file.name;
+        status.textContent = "Video loaded: " + file.name;
+        
         const reader = new FileReader();
         reader.onload = function(e) {
           videoDataURL = e.target.result;
@@ -373,6 +763,8 @@
         video.play();
         startRecording();
         updateASCII();
+        // Auto-switch to ASCII tab when starting
+        tabs[1].click();
       } else {
         alert("Please select a video file first.");
       }
@@ -398,6 +790,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      status.textContent = "Video downloaded";
     });
     
     downloadTextButton.addEventListener('click', function () {
@@ -419,18 +812,18 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      status.textContent = "Text file downloaded";
     });
     
-    themeToggle.addEventListener('change', function () {
-      if (this.checked) {
-        document.body.classList.add('dark-mode');
-      } else {
-        document.body.classList.remove('dark-mode');
-      }
+    video.addEventListener('pause', () => {
+      cancelAnimationFrame(animationFrameId);
+      status.textContent = "Paused";
     });
     
-    video.addEventListener('pause', () => cancelAnimationFrame(animationFrameId));
-    video.addEventListener('ended', () => cancelAnimationFrame(animationFrameId));
+    video.addEventListener('ended', () => {
+      cancelAnimationFrame(animationFrameId);
+      status.textContent = "Video ended";
+    });
   </script>
 </body>
 </html>
